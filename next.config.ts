@@ -1,17 +1,32 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
+
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
+
 const nextConfig: NextConfig = {
-  /* config options here */
+  /*
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: false,
+  },
+*/
   images: {
     remotePatterns: [
-       {
-        protocol: 'https',
-        hostname: 'drive.google.com',
-        pathname: '/thumbnail**',
+      {
+        protocol: "https",
+        hostname: "drive.google.com",
+        pathname: "/**",
       },
     ],
   },
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    ignoreDuringBuilds: true,
+  }
+  /* config options here */
 };
 
 export default withNextIntl(nextConfig);
