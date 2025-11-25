@@ -63,31 +63,27 @@ export default function JobOffersPage() {
   const [selectedOffer, setSelectedOffer] = useState<AdaptedJobOffer | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // ⛔ Si la página de la URL es menor a 1 → redirigir a 1
-// ⛔ Si la página supera el límite → redirigir a totalPages
-   useEffect(() => {
-  if (!isLoading && totalPages > 0) {
+  useEffect(() => {// corregir pagina actual si esta fuera del limite
+    if (!isLoading && totalPages > 0) {
 
-    const params = new URLSearchParams(window.location.search);
-    const pageParam = Number(params.get('page') || 1);
+      const params = new URLSearchParams(window.location.search);
+      const pageParam = Number(params.get('page') || 1);
 
-    let correctedPage = pageParam;
+      let correctedPage = pageParam;
 
-    // ⚠️ Validaciones
-    if (pageParam < 1 || isNaN(pageParam)) {
-      correctedPage = 1;
-    } else if (pageParam > totalPages) {
-      correctedPage = totalPages;
+      if (pageParam < 1 || isNaN(pageParam)) {//validaciones
+        correctedPage = 1;
+       } else if (pageParam > totalPages) {
+        correctedPage = totalPages;
+      }
+
+      if (correctedPage !== pageParam) {
+        params.set('page', correctedPage.toString());
+        window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+        dispatch(setPaginaActual(correctedPage));
+      }
     }
-
-    // ⚠️ Si se modificó la página → actualizar la URL y Redux
-    if (correctedPage !== pageParam) {
-      params.set('page', correctedPage.toString());
-      window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
-      dispatch(setPaginaActual(correctedPage));
-    }
-  }
-}, [isLoading, totalPages, dispatch]);
+  }, [isLoading, totalPages, dispatch]);
 
 
   // Limpiar búsqueda si se navega directamente sin parámetros
