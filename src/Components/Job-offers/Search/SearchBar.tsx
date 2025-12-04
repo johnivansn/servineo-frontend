@@ -16,6 +16,7 @@ import { useSearchSuggestions } from '@/app/redux/features/searchHistory/useSear
 import { useSearchKeyboard } from '@/app/redux/features/searchHistory/useSearchKeyboard';
 import { useSearchTouch } from '@/app/redux/features/searchHistory/useSearchTouch';
 import { SearchDropdown } from '@/Components/Shared/SearchDropdown';
+import { usePathname } from 'next/navigation'; // 👈 TU ÚNICA IMPORTACIÓN NUEVA
 import { useJobTypeAutoMatch } from '@/lib/useJobTypeAutoMatch';
 import { setFilters } from '@/app/redux/slice/jobOfert';
 import { useEffect } from 'react';
@@ -27,6 +28,7 @@ interface SearchBarProps {
 
 export const SearchBar = ({ onSearch, onFilter }: SearchBarProps) => {
   const t = useTranslations('search');
+  const pathname = usePathname(); // 👈 TU LÍNEA 1
   const dispatch = useAppDispatch();
   const { findMatchingJobType, findMatchingCity } = useJobTypeAutoMatch();
 
@@ -52,6 +54,13 @@ export const SearchBar = ({ onSearch, onFilter }: SearchBarProps) => {
 
   const prevSearchFromStore = React.useRef(searchFromStore);
 
+  // 👇 TU BLOQUE COMPLETO (LÍNEAS 2-6)
+  const currentLanguage = React.useMemo(() => {
+    const pathSegments = (pathname || '').split('/').filter(Boolean);
+    const langSegment = pathSegments[0];
+    return ['en', 'es'].includes(langSegment) ? langSegment : 'es';
+  }, [pathname]);
+
   // Hooks personalizados
   const { history, addToHistory, removeFromHistory, clearHistory } = useSearchHistory({
     useBackend: true,
@@ -62,6 +71,7 @@ export const SearchBar = ({ onSearch, onFilter }: SearchBarProps) => {
     minLength: 1,
     debounceMs: 300,
     maxResults: 6,
+    language: currentLanguage, // 👈 TU LÍNEA 7 (única modificación en su código)
   });
 
   // Restaurar desde Redux/localStorage al cargar
@@ -248,12 +258,12 @@ export const SearchBar = ({ onSearch, onFilter }: SearchBarProps) => {
   }`;
 
   return (
-    <div className="w-full" ref={containerRef}>
-      <div className="flex flex-row w-full items-center gap-2">
-        <div className="relative flex-1 min-w-0 self-center">
+    <div className='w-full' ref={containerRef}>
+      <div className='flex flex-row w-full items-center gap-2'>
+        <div className='relative flex-1 min-w-0 self-center'>
           <SearchIcon hasError={hasError} />
           <Input
-            type="text"
+            type='text'
             placeholder={t('placeholder')}
             className={inputClasses}
             value={previewValue ?? value}
@@ -296,14 +306,14 @@ export const SearchBar = ({ onSearch, onFilter }: SearchBarProps) => {
           />
         </div>
 
-        <div className="flex gap-2 items-center shrink-0">
+        <div className='flex gap-2 items-center shrink-0'>
           <SearchButton onClick={handleSearch} />
           <AdvancedSearchButton />
           {onFilter && <FilterButton onClick={onFilter} />}
         </div>
       </div>
-      <div className="min-h-5 mt-1">
-        {hasError && <p className="text-red-500 text-sm leading-4">{error}</p>}
+      <div className='min-h-5 mt-1'>
+        {hasError && <p className='text-red-500 text-sm leading-4'>{error}</p>}
       </div>
     </div>
   );

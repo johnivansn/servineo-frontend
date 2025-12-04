@@ -10,6 +10,7 @@ import NotificationModal from '@/Components/Modal-notifications';
 import { JobOfferCard } from '@/Components/Job-offers/JobOfferCard';
 import Image from 'next/image';
 import { boliviaCities } from '@/app/lib/validations/Job-offer-Schemas';
+import { useTranslations } from 'next-intl';
 import { useAppSelector } from '@/app/redux/hooks';
 import {
   useGetJobsByFixerQuery,
@@ -35,6 +36,7 @@ interface NotificationState {
 }
 
 export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
+  const t = useTranslations('JobOffersSection');
   const { user } = useAppSelector((state) => state.user);
   const userId = user?._id || '';
 
@@ -60,7 +62,7 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
     handleSubmit,
     reset,
     setValue,
-    watch, // Necesario para ver los tags en tiempo real
+    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(jobOfferSchema),
@@ -71,11 +73,10 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
       title: '',
       description: '',
       category: '',
-      tags: [] as string[], // Array de tags inicial
+      tags: [] as string[],
     },
   });
 
-  // Observamos los tags actuales para dibujarlos
   const currentTags = watch('tags') || [];
 
   const showNotify = (
@@ -87,17 +88,14 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
     setNotify({ isOpen: true, type, title, message, onConfirm });
   };
 
-  // === Lógica de Tags ===
   const handleAddTag = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     if (!value) return;
 
-    // Evitar duplicados y máximo 5 tags
     if (!currentTags.includes(value) && currentTags.length < 5) {
       setValue('tags', [...currentTags, value], { shouldValidate: true });
     }
 
-    // Resetear el select visualmente para que vuelva a "Seleccionar..."
     e.target.value = '';
   };
 
@@ -106,7 +104,6 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
     setValue('tags', newTags, { shouldValidate: true });
   };
 
-  // === Manejo de Imágenes ===
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (selectedImages.length + files.length > 5) {
@@ -134,7 +131,6 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
     setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // === Handlers Modal ===
   const handleOpenModal = (offer?: IJobOffer) => {
     if (readOnly) return;
 
@@ -146,8 +142,6 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
       setValue('price', offer.price);
       setValue('city', offer.city);
       setValue('contactPhone', offer.contactPhone);
-
-      // Cargar tags: Si tiene tags úsalos, si no, usa la categoría como tag inicial
       setValue('tags', offer.tags && offer.tags.length > 0 ? offer.tags : [offer.category]);
 
       setPreviewUrls(offer.photos || []);
@@ -161,7 +155,7 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
         category: '',
         city: 'Cochabamba',
         contactPhone: user?.telefono || '',
-        tags: [], // Resetear tags
+        tags: [],
       });
       setPreviewUrls([]);
       setSelectedImages([]);
@@ -177,7 +171,6 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
     reset();
   };
 
-  // === Submit (Create/Update) ===
   const onSubmit = async (data: JobOfferFormData) => {
     if (!user?._id) return showNotify('error', 'Error', 'No se identificó al usuario.');
 
@@ -195,11 +188,7 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
       formData.append('price', data.price.toString());
       formData.append('city', data.city);
       formData.append('contactPhone', data.contactPhone);
-
-      // --- CAMBIO IMPORTANTE: Enviamos los tags reales ---
       formData.append('tags', JSON.stringify(data.tags));
-      // --------------------------------------------------
-
       formData.append('rating', editingOffer ? editingOffer.rating.toString() : '5');
 
       selectedImages.forEach((file) => formData.append('photos', file));
@@ -218,7 +207,6 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
     }
   };
 
-  // === Delete ===
   const confirmDelete = (jobId: string) => {
     if (!userId) return;
     showNotify('warning', '¿Eliminar oferta?', 'Esta acción no se puede deshacer.', async () => {
@@ -232,7 +220,6 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
     });
   };
 
-  // === Mapeo de Datos ===
   const mapToCardData = (offer: IJobOffer): JobOfferData => ({
     _id: offer._id,
     fixerId: offer.fixerId,
@@ -254,28 +241,29 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
 
   const isSubmitting = isCreating || isUpdating;
 
-  if (isLoading) return <div className="p-10 text-center animate-pulse">Cargando ofertas...</div>;
+  if (isLoading) return <div className='p-10 text-center animate-pulse'>Cargando ofertas...</div>;
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-          <Briefcase className="h-5 w-5 text-blue-600" />
-          {readOnly ? 'Ofertas Disponibles' : 'Mis Servicios'}
+      <div className='flex items-center justify-between'>
+        <h2 className='text-xl font-semibold text-gray-900 flex items-center gap-2'>
+          <Briefcase className='h-5 w-5 text-blue-600' />
+          {readOnly ? t('titles.jobOffers') : t('titles.myJobOffers')}
         </h2>
         {!readOnly && (
           <PillButton
             onClick={() => handleOpenModal()}
-            className="bg-primary text-white hover:bg-blue-800 flex items-center gap-2"
+            className='bg-primary text-white hover:bg-blue-800 flex items-center gap-2'
           >
-            <Plus className="h-4 w-4" /> Nueva Oferta
+            <Plus className='h-4 w-4' />
+            {t('buttons.newOffer')}
           </PillButton>
         )}
       </div>
 
       {/* Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
         {apiOffers?.map((offer) => (
           <JobOfferCard
             key={offer._id}
@@ -292,11 +280,11 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
             }
             onDelete={!readOnly ? () => confirmDelete(offer._id!) : undefined}
             readOnly={readOnly}
-            className="h-full"
+            className='h-full'
           />
         ))}
         {(!apiOffers || apiOffers.length === 0) && (
-          <div className="col-span-full py-12 text-center text-gray-400 bg-gray-50 rounded-xl border border-dashed">
+          <div className='col-span-full py-12 text-center text-gray-400 bg-gray-50 rounded-xl border border-dashed'>
             No hay ofertas publicadas aún.
           </div>
         )}
@@ -306,38 +294,38 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
       <Modal
         open={isModalOpen}
         onClose={handleCloseModal}
-        size="lg"
+        title={editingOffer ? t('modal.editTitle') : t('modal.newTitle')}
+        size='lg'
         closeOnOverlayClick={!isSubmitting}
-        className="rounded-2xl border-primary border-2"
+        className='rounded-2xl border-primary border-2'
       >
-        <Modal.Header className="text-center text-primary">
-          {editingOffer ? 'Editar Oferta' : 'Crear Oferta'}
-        </Modal.Header>
         <Modal.Body>
-          <form id="offerForm" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form id='offerForm' onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
             {/* Título */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+              <label className='block text-sm font-medium text-gray-700 mb-1'>
+                {t('form.title.label')}
+              </label>
               <input
                 {...register('title')}
-                className="w-full rounded-lg border-primary border focus:outline-none py-2 px-3"
-                placeholder="Ej: Reparación de fugas"
+                className='w-full rounded-lg border-primary border focus:outline-none py-2 px-3'
+                placeholder={t('form.title.placeholder')}
               />
               {errors.title && (
-                <p className="text-red-500 text-xs mt-1">{errors.title.message as string}</p>
+                <p className='text-red-500 text-xs mt-1'>{errors.title.message as string}</p>
               )}
             </div>
 
             {/* Categoría */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Categoría Principal
+              <label className='block text-sm font-medium text-gray-700 mb-1'>
+                {t('form.category.label')}
               </label>
               <select
                 {...register('category')}
-                className="w-full rounded-lg border-primary border focus:outline-none py-2 px-3 bg-white"
+                className='w-full rounded-lg border-primary border focus:outline-none py-2 px-3 bg-white'
               >
-                <option value="">Seleccionar...</option>
+                <option value=''>{t('form.category.select')}</option>
                 {jobCategories.map((cat) => (
                   <option key={cat.value} value={cat.value}>
                     {cat.label}
@@ -345,102 +333,102 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
                 ))}
               </select>
               {errors.category && (
-                <p className="text-red-500 text-xs mt-1">{errors.category.message as string}</p>
+                <p className='text-red-500 text-xs mt-1'>{errors.category.message as string}</p>
               )}
             </div>
 
-            {/* === SECCIÓN DE TAGS (Etiquetas) === */}
+            {/* Sección de Tags */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Etiquetas Extra (Máx. 5)
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                {t('form.tags.label')}
               </label>
 
-              {/* Visualización de Tags seleccionados */}
-              <div className="flex flex-wrap gap-2 mb-2 min-h-[32px] p-2 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+              <div className='flex flex-wrap gap-2 mb-2 min-h-[32px] p-2 bg-gray-50 rounded-lg border border-dashed border-gray-300'>
                 {currentTags.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-primary border border-blue-200 shadow-sm animate-fade-in"
+                    className='inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-primary border border-blue-200 shadow-sm animate-fade-in'
                   >
                     {tag}
                     <button
-                      type="button"
+                      type='button'
                       onClick={() => removeTag(tag)}
-                      className="hover:text-red-500 focus:outline-none ml-1 p-0.5 rounded-full hover:bg-white/50 transition-colors"
+                      className='hover:text-red-500 focus:outline-none ml-1 p-0.5 rounded-full hover:bg-white/50 transition-colors'
                     >
                       <X size={12} />
                     </button>
                   </span>
                 ))}
                 {currentTags.length === 0 && (
-                  <span className="text-xs text-gray-400 italic self-center">
-                    No hay etiquetas seleccionadas
+                  <span className='text-xs text-gray-400 italic self-center'>
+                    {t('form.tags.empty')}
                   </span>
                 )}
               </div>
 
-              {/* Select para agregar tags */}
               <select
                 onChange={handleAddTag}
-                className="w-full rounded-lg border-primary border focus:outline-none bg-white py-2 px-3 cursor-pointer"
+                className='w-full rounded-lg border-primary border focus:outline-none bg-white py-2 px-3 cursor-pointer'
                 disabled={currentTags.length >= 5}
-                defaultValue=""
+                defaultValue=''
               >
-                <option value="" disabled>
-                  {currentTags.length >= 5
-                    ? 'Límite de 5 etiquetas alcanzado'
-                    : '+ Agregar etiqueta...'}
+                <option value='' disabled>
+                  {currentTags.length >= 5 ? t('form.tags.limitReached') : t('form.tags.addTag')}
                 </option>
                 {jobCategories.map((cat) => (
-                  // Solo mostramos las que no están seleccionadas (opcional)
                   <option
                     key={cat.value}
                     value={cat.value}
                     disabled={currentTags.includes(cat.value)}
                   >
-                    {cat.label} {currentTags.includes(cat.value) ? '(Ya agregado)' : ''}
+                    {cat.label} {currentTags.includes(cat.value) ? t('form.tags.alreadyAdded') : ''}
                   </option>
                 ))}
               </select>
 
               {errors.tags && (
-                <p className="text-red-500 text-xs mt-1">{errors.tags.message as string}</p>
+                <p className='text-red-500 text-xs mt-1'>{errors.tags.message as string}</p>
               )}
             </div>
-            {/* ================================== */}
 
             {/* Descripción */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+              <label className='block text-sm font-medium text-gray-700 mb-1'>
+                {t('form.description.label')}
+              </label>
               <textarea
                 {...register('description')}
                 rows={4}
-                className="w-full rounded-lg border-primary border focus:outline-none py-2 px-3"
-                placeholder="Detalles del servicio..."
+                className='w-full rounded-lg border-primary border focus:outline-none py-2 px-3'
+                placeholder={t('form.description.placeholder')}
               />
               {errors.description && (
-                <p className="text-red-500 text-xs mt-1">{errors.description.message as string}</p>
+                <p className='text-red-500 text-xs mt-1'>{errors.description.message as string}</p>
               )}
             </div>
 
             {/* Precio y Ciudad */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className='grid grid-cols-2 gap-4'>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Precio (Bs.)</label>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>
+                  {t('form.price.label')}
+                </label>
                 <input
-                  type="number"
+                  type='number'
                   {...register('price')}
-                  className="w-full rounded-lg border-primary border focus:outline-none py-2 px-3"
+                  className='w-full rounded-lg border-primary border focus:outline-none py-2 px-3'
                 />
                 {errors.price && (
-                  <p className="text-red-500 text-xs mt-1">{errors.price.message as string}</p>
+                  <p className='text-red-500 text-xs mt-1'>{errors.price.message as string}</p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ciudad</label>
+                <label className='block text-sm font-medium text-gray-700 mb-1'>
+                  {t('form.city.label')}
+                </label>
                 <select
                   {...register('city')}
-                  className="w-full rounded-lg border-primary border focus:outline-none py-2 px-3 bg-white"
+                  className='w-full rounded-lg border-primary border focus:outline-none py-2 px-3 bg-white'
                 >
                   {boliviaCities.map((city) => (
                     <option key={city.value} value={city.value}>
@@ -449,54 +437,56 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
                   ))}
                 </select>
                 {errors.city && (
-                  <p className="text-red-500 text-xs mt-1">{errors.city.message as string}</p>
+                  <p className='text-red-500 text-xs mt-1'>{errors.city.message as string}</p>
                 )}
               </div>
             </div>
 
             {/* Teléfono */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Celular</label>
+              <label className='block text-sm font-medium text-gray-700 mb-1'>
+                {t('form.contactPhone.label')}
+              </label>
               <input
                 {...register('contactPhone')}
-                className="w-full rounded-lg border-primary border focus:outline-none py-2 px-3"
+                className='w-full rounded-lg border-primary border focus:outline-none py-2 px-3'
               />
               {errors.contactPhone && (
-                <p className="text-red-500 text-xs mt-1">{errors.contactPhone.message as string}</p>
+                <p className='text-red-500 text-xs mt-1'>{errors.contactPhone.message as string}</p>
               )}
             </div>
 
             {/* Imágenes */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Imágenes (Máx. 5)
+              <label className='block text-sm font-medium text-gray-700 mb-2'>
+                {t('form.images.label')}
               </label>
-              <div className="grid grid-cols-4 gap-2 mb-2">
+              <div className='grid grid-cols-4 gap-2 mb-2'>
                 {previewUrls.map((url, idx) => (
-                  <div key={idx} className="relative aspect-square group">
+                  <div key={idx} className='relative aspect-square group'>
                     <Image
                       src={url}
-                      className="w-full h-full object-cover rounded-lg border"
-                      alt="preview"
+                      className='w-full h-full object-cover rounded-lg border'
+                      alt='preview'
                       width={100}
                       height={100}
                     />
                     <button
-                      type="button"
+                      type='button'
                       onClick={() => removeImage(idx)}
-                      className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      className='absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity'
                     >
                       <X size={14} />
                     </button>
                   </div>
                 ))}
                 {previewUrls.length < 5 && (
-                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg aspect-square cursor-pointer hover:bg-gray-50 transition-colors">
-                    <Upload className="text-gray-400" />
+                  <label className='flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg aspect-square cursor-pointer hover:bg-gray-50 transition-colors'>
+                    <Upload className='text-gray-400' />
                     <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
+                      type='file'
+                      className='hidden'
+                      accept='image/*'
                       multiple
                       onChange={handleImageChange}
                     />
@@ -507,20 +497,20 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
           </form>
         </Modal.Body>
         <Modal.Footer>
-          <div className="flex justify-end gap-2">
+          <div className='flex justify-end gap-2'>
             <button
               onClick={handleCloseModal}
-              className="border border-primary py-2 px-4 rounded-2xl text-primary hover:text-white hover:bg-primary transition-colors"
+              className='border border-primary py-2 px-4 rounded-2xl text-primary hover:text-white hover:bg-primary transition-colors'
             >
-              Cancelar
+              {t('buttons.cancel')}
             </button>
             <PillButton
-              type="submit"
-              form="offerForm"
-              className="bg-primary text-white hover:bg-blue-800"
+              type='submit'
+              form='offerForm'
+              className='bg-primary text-white hover:bg-blue-800'
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Guardando...' : 'Guardar Oferta'}
+              {isSubmitting ? t('buttons.saving') : t('buttons.save')}
             </PillButton>
           </div>
         </Modal.Footer>
@@ -533,7 +523,7 @@ export function JobOffersSection({ readOnly = false }: { readOnly?: boolean }) {
         title={notify.title}
         message={notify.message}
         onConfirm={notify.onConfirm}
-        confirmText="Confirmar"
+        confirmText='Confirmar'
         autoClose={!notify.onConfirm}
       />
     </div>
